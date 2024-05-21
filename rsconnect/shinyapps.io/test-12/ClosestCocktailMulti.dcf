@@ -1,0 +1,12 @@
+name: ClosestCocktailMulti
+title: ClosestCocktailMulti
+username: test-12
+account: test-12
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11869014
+bundleId: 8547536
+url: https://test-12.shinyapps.io/ClosestCocktailMulti/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

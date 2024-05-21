@@ -1,0 +1,44 @@
+.container-fluid>h2 {
+    /* font-weight: bold; */
+    font-size: 4em;
+}
+
+* {
+    font-family: Baskerville;
+}
+
+.well {
+    background: none;
+    border: 1px solid black;
+}
+
+.checkbox>label>span {
+    text-transform: capitalize;
+}
+
+.info {
+    max-width: 75%;
+    padding: 2%;
+    font-size: 1.5em;
+}
+
+.rec-list {
+    display: flex; 
+    flex-direction: row; 
+    flex-wrap: wrap; 
+}
+
+.cocktail-wrapper {
+    margin: 1%;
+    padding: 2%; 
+    border: 1px solid black; 
+    border-radius: 1%; 
+}
+
+.cocktail-title {
+    margin-top: 0px
+}
+
+.ingredient-item {
+    text-transform: capitalize;
+}
