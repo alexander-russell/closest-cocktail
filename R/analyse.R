@@ -1,9 +1,13 @@
+#Inspired by Julia Silge's analysis on this dataset
+#https://juliasilge.com/blog/cocktail-recipes-umap/
+
 library(embed)
 library(tidyverse)
 
-raw <- read_csv("bostonCocktailsOriginal.csv")
+#Load data (Note: This data is from TidyTuesday, 2020-05-26)
+cocktailsRaw <- read_csv("bostonCocktailsOriginal.csv")
 
-cocktails <- raw %>%
+cocktails <- cocktailsRaw %>%
   #Clean up ingredient names
   mutate(
     #Lowercase ingredient names
@@ -92,11 +96,12 @@ cocktails <- raw %>%
     #Convert string to number
     weight = parse_number(weight)
   ) %>%
-  #Remove duplicates (not confident but problems with pivot wider otherwise)
+  #Remove duplicates (not confident but problems with pivot_wider otherwise)
   distinct(row_id, ingredient, .keep_all = TRUE)
-  #Get first hundred (debug)
-  # slice_head(n = 100)
 
+#Note: I kept cocktailsReduced separate so I can give UMAP only the popular 
+#      ingredients but keep the full, processed, cocktail recipe for
+#      later display
 
 cocktailsReduced <- cocktails %>%
   #Remove any ingredients used 15 or less times
@@ -104,95 +109,18 @@ cocktailsReduced <- cocktails %>%
   filter(n > 15) %>%
   select(-n)
 
+#Pivot to wide format for UMAP analysis
 cocktailsWide <- cocktailsReduced %>%
   select(-ingredient_number, -row_id, -category, -measure) %>%
   pivot_wider(names_from = ingredient, values_from = weight, values_fill = 0) %>%
   janitor::clean_names()
   
+#Create plan for UMAP analysis
 cocktailsUmapRecipe <- recipe( ~ ., data = cocktailsWide) %>%
   update_role(name, new_role = "id") %>%
   step_normalize(all_predictors()) %>%
   step_umap(all_predictors())
 
+#Conduct UMAP analysis and extract results
 cocktailsUmapPrep <- prep(cocktailsUmapRecipe)
 cocktailsUmap <- juice(cocktailsUmapPrep)
-
-# 
-# cocktailsUmap %>%
-#   mutate(
-#     highlight = ifelse(str_detect(name, "artini"), TRUE, FALSE)
-#   ) %>%
-#   ggplot(aes(UMAP1, UMAP2, label = name)) +
-#   # Add big point
-#   # geom_point(data = selected(), size = 8, shape = 4, stroke = 0.5) +
-#   #Add points
-#   geom_point(alpha = 0.7, size = 2, aes(colour = highlight)) +
-#   #Add text
-#   geom_text(check_overlap = TRUE, hjust = "inward") +
-#   labs(color = NULL)
-# 
-# 
-# v <- cocktails %>%
-#   #select(ingredient) %>%
-#   add_count(ingredient) %>%
-#   distinct(ingredient, .keep_all = TRUE) %>%
-#   arrange(ingredient) #%>%
-#   #select(n, ingredient)# %>%
-#   # filter(n > 1)
-#   # filter(str_detect(ingredient, "lemon") & str_detect(ingredient, "juice"))
-# # view(v)
-# 
-# v <- cocktails %>%
-#   select(weight) %>%
-#   add_count(weight) %>%
-#   distinct(weight, .keep_all = TRUE)
-# view(v)
-#   
-# 
-# boston_cocktails <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-05-26/boston_cocktails.csv")
-# cocktails_parsed <-  boston_cocktails %>%
-#   mutate(
-#     ingredient = str_to_lower(ingredient),
-#     ingredient = str_replace_all(ingredient, "-", " "),
-#     ingredient = str_remove(ingredient, " liqueur$"),
-#     ingredient = str_remove(ingredient, " (if desired)$"),
-#     ingredient = case_when(
-#       str_detect(ingredient, "bitters") ~ "bitters",
-#       str_detect(ingredient, "lemon") ~ "lemon juice",
-#       str_detect(ingredient, "lime") ~ "lime juice",
-#       str_detect(ingredient, "grapefruit") ~ "grapefruit juice",
-#       str_detect(ingredient, "orange") ~ "orange juice",
-#       TRUE ~ ingredient
-#     ),
-#     measure = case_when(
-#       str_detect(ingredient, "bitters") ~ str_replace(measure, "oz$", "dash"),
-#       TRUE ~ measure
-#     ),
-#     measure = str_replace(measure, " ?1/2", ".5"),
-#     measure = str_replace(measure, " 3/4", ".75"),
-#     measure = str_replace(measure, " ?1/4", ".25"),
-#     measure_number = parse_number(measure),
-#     measure_number = if_else(str_detect(measure, "dash$"),
-#                              measure_number / 50,
-#                              measure_number
-#     )
-#   ) %>%
-#   add_count(ingredient) %>%
-#   filter(n > 15) %>%
-#   select(-n) %>%
-#   distinct(row_id, ingredient, .keep_all = TRUE) %>%
-#   na.omit()
-# 
-# cocktails_df <- cocktails_parsed %>%
-#   select(-ingredient_number, -row_id, -measure) %>%
-#   pivot_wider(names_from = ingredient, values_from = measure_number, values_fill = 0) %>%
-#   janitor::clean_names() %>%
-#   na.omit()
-# 
-# umap_rec <- recipe(~., data = cocktails_df) %>%
-#   update_role(name, category, new_role = "id") %>%
-#   step_normalize(all_predictors()) %>%
-#   step_umap(all_predictors())
-# 
-# umap_prep <- prep(umap_rec)
-# result <- juice(umap_prep)
