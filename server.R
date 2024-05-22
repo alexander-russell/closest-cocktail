@@ -1,35 +1,9 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
 library(glue)
 
-# Define server logic required to draw a scatterplot
+#Define server logic required to 
 function(input, output, session) {
-    #Get the selected cocktail
-    # selected <- reactive({
-    #   getCocktailByName(result, input$selectedName)
-    # })
-    
-    #Create a scatterplot
-    output$umapPlot <- renderPlot({
-      cocktailsUmap %>%
-        ggplot(aes(UMAP1, UMAP2, label = name)) +
-        #Add points
-        geom_point(alpha = 0.7, size = 2) +
-        #Add text
-        geom_text(check_overlap = TRUE, hjust = "inward") +
-        labs(color = NULL) +
-        #Add big point
-        geom_point(data = (cocktailsUmap %>% filter(name == input$selectedName)), colour = "red", size = 5)
-    })
-    
+  #Get recommendations based on input
     recommended <- reactive({
       recommend(
         cocktailsUmap = cocktailsUmap, 
@@ -41,48 +15,43 @@ function(input, output, session) {
       )
     })
     
-    selected <- reactive({
-      cocktailsUmap %>% filter(name == input$selectedName)
-    })
+    
+    #Automatically select ingredients in selected cocktail
+    observe({
+      #Get currently selected cocktail
+      selectedName <- input$selectedName
       
-    output$recTable <- renderTable({
-      recommended()
+      #In the ingredients checkbox form, select any of the ingredients in the selected cocktail
+      updateCheckboxGroupInput(
+        session, "ingredients",
+        selected = getCocktailByName(cocktails, selectedName)$ingredient
+      )
     })
     
-    output$recPlot <- renderPlot({
-      recommended() %>%
-        ggplot(aes(UMAP1, UMAP2, label = name)) +
-        #Add big point
-        geom_point(data = selected(), size = 8, shape = 4, stroke = 0.5) +
-        #Add points
-        geom_point(alpha = 0.7, size = 2, aes(colour = as.factor(extraNeeded))) +
-        #Add text
-        geom_text(check_overlap = TRUE, hjust = "inward") +
-        labs(color = NULL)
-    })
-    
+    #Output information on the selected cocktail, assembled with html
     output$selectedInfo <- renderUI({
+      #Create information panel
       container <- div(class = "info")
       
-      #Mention the selected drink
+      #Name and describe the selected drink
       ingredientList <- getCocktailByName(cocktails, input$selectedName)$ingredient
       infoElement <- p(glue("You've selected {input$selectedName}. For reference, it contains: {toString(ingredientList)}."))
-      
       container <- tagAppendChild(container, infoElement)
       
-      #Mention what the following is
-      # guideElement <- p("Listed below are", input$n, "cocktail recommendations based on your selected cocktail and the ingredients you have access to.")
+      #Describe recommendation list
       guideElement <- p(glue("Listed below are {input$n} cocktail recommendations based on your selected cocktail and the ingredients you have access to."))
-      
       container <- tagAppendChild(container, guideElement)
       
       return(container)
     })
     
+    #Create a series of panels displaying each recommendation
     output$recList <- renderUI({
-      #debug make the border red
+      #Make a container to store the whole set of recommendations
       container <- div(class = "rec-list")
       recs <- recommended()
+      
+      #Go through each recommendation
       for (i in 1:nrow(recs)) {
         #Make a wrapper element (just in case)
         cocktailWrapper <- div(class="cocktail-wrapper")
@@ -101,7 +70,6 @@ function(input, output, session) {
         } else {
           cocktailDescription <- p("You don't need anything extra")
         }
-        
         cocktailElement <- tagAppendChild(cocktailElement, cocktailDescription)
         
         #Add in an ingredients subheading
@@ -111,7 +79,6 @@ function(input, output, session) {
         #Add in each of the ingredients
         ingredientsList <- getCocktailByName(cocktails, recs[i,]$name)$ingredient
         ingListElement <- tags$ul()
-        
         for (j in 1:length(ingredientsList)) {
           ingredientElement <- tags$li(ingredientsList[j], class = "ingredient-item")
           ingListElement <- tagAppendChild(ingListElement, ingredientElement)
@@ -126,17 +93,5 @@ function(input, output, session) {
       }
 
       return(container)
-    })
-    
-    #Automatically select ingredients in selected cocktail
-    observe({
-      #Get currently selected cocktail
-      selectedName <- input$selectedName
-      
-      #In the ingredients checkbox form, select any of the ingredients in the selected cocktail
-      updateCheckboxGroupInput(
-        session, "ingredients",
-        selected = getCocktailByName(cocktails, selectedName)$ingredient
-      )
     })
 }
