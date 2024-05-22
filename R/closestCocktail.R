@@ -1,30 +1,24 @@
-#recommend(juice(umap_prep), cocktails_parsed, "Amaretto Sour", tibble(name = c("Brandy", "Cointreau", "Amaretto")), 2, 5)
+#Note: This file contains a series of helper functions to use the 
+#      UMAP analysis to generate recommendations
 
+#Get n recommended cocktails based on UMAP similarity and ingredients available
 recommend <- function(cocktailsUmap, cocktails, selectedName, ingredients, extraThreshold, n) {
-  #^Where cocktails has name,UMAP1,UMAP2, ingredients has name
-  
-  #Get rid of factored name
+  #Convert name from factor to string
   cocktailsUmap <- cocktailsUmap %>%
     mutate(name = as.character(name))
   
-  #Get information on selected cocktail by name, get all other cocktails
+  #Get data for selected cocktail, get data for all other cocktails
   selected <- cocktailsUmap %>% filter(name == selectedName)
   options <- cocktailsUmap %>% filter(name != selectedName)
   
   #Calculate how many extra ingredients you need, filter by threshold
-  # if (is_empty(ingredients)) {
-    # return(ingredients)
-    options <- options %>%
-      mutate(
-        extraNeeded = map_dbl(name, ~length(ingredientsNeeded(cocktails, .x, ingredients)))
-      ) %>%
-      filter(extraNeeded <= extraThreshold)
-  # } else {
-    # return(tibble(n=c(1,2,3)))
-  # }
+  options <- options %>%
+    mutate(
+      extraNeeded = map_dbl(name, ~length(ingredientsNeeded(cocktails, .x, ingredients)))
+    ) %>%
+    filter(extraNeeded <= extraThreshold)
   
-  # return(options)
-  #Sort by euclidean distance in 2D UMAP space
+  #Sort by smallest euclidean distance in 2D UMAP space
   options <- options %>%
     mutate(
       distance = (UMAP1 - selected$UMAP1)^2 + (UMAP2 - selected$UMAP2)^2,
@@ -38,8 +32,8 @@ recommend <- function(cocktailsUmap, cocktails, selectedName, ingredients, extra
   return(options)
 }
 
+#Gets subset of ingredients needed to make <cocktailName>, not 
 ingredientsNeeded <- function(cocktails, cocktailName, ingredients) {
-  # print(cocktailName)
   #Get list of ingredients in recipe
   cocktail <- cocktails %>% 
     filter(name == cocktailName)
@@ -54,10 +48,13 @@ ingredientsNeeded <- function(cocktails, cocktailName, ingredients) {
   return(cocktail$ingredient)
 }
 
+#Calculates number of ingredients needed
 ingredientsNeededCount <- function(cocktails, cocktailName, ingredients) {
+  #Count results from ingredientsNeeded
   return(length(ingredientsNeeded(cocktails, cocktailName, ingredients)))
 }
 
+#Gets data corresponding to a named cocktail
 getCocktailByName <- function(cocktails, cocktailName) {
   #Filter and return
   cocktail <- cocktails %>% filter(name == cocktailName)
